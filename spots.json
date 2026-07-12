@@ -1,0 +1,79 @@
+{
+  "spots": [
+    {
+      "id": "playa_del_rey",
+      "name": "Playa del Rey / Toes Beach",
+      "lat": 33.9550,
+      "lon": -118.4520,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "dockweiler",
+      "name": "Dockweiler State Beach",
+      "lat": 33.9250,
+      "lon": -118.4350,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "el_segundo",
+      "name": "El Segundo Beach",
+      "lat": 33.9080,
+      "lon": -118.4230,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "el_porto",
+      "name": "El Porto (north Manhattan Beach)",
+      "lat": 33.8930,
+      "lon": -118.4160,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "manhattan_beach_pier",
+      "name": "Manhattan Beach Pier",
+      "lat": 33.8847,
+      "lon": -118.4109,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "hermosa_beach_22nd",
+      "name": "Hermosa Beach - 22nd Street",
+      "lat": 33.8720,
+      "lon": -118.4040,
+      "primary_buoy": "46221"
+    },
+    {
+      "id": "hermosa_beach_pier",
+      "name": "Hermosa Beach Pier",
+      "lat": 33.8622,
+      "lon": -118.3998,
+      "primary_buoy": "46221"
+    }
+  ],
+  "buoys": {
+    "46221": {
+      "name": "Santa Monica Bay",
+      "lat": 33.860,
+      "lon": -118.641,
+      "type": "Scripps nearshore waverider - primary reference for all South Bay spots"
+    },
+    "46222": {
+      "name": "San Pedro",
+      "lat": 33.614,
+      "lon": -118.314,
+      "type": "Scripps nearshore waverider - secondary/backup reference"
+    },
+    "46025": {
+      "name": "Santa Monica Basin",
+      "lat": 33.749,
+      "lon": -119.053,
+      "type": "Offshore buoy - useful for incoming swell that hasn't reached the coast yet"
+    }
+  },
+  "tide_station": {
+    "id": "9410840",
+    "name": "Santa Monica, CA",
+    "source": "NOAA CO-OPS"
+  },
+  "coverage_note": "Spots run north to south from Playa del Rey to Hermosa Beach. Coordinates are approximate beach-access points, good enough for regional swell/wave model queries; not survey-precise."
+}

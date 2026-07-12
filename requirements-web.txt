@@ -1,0 +1,6 @@
+# Minimal dependencies for deploying app.py (the web dashboard) to Render.
+# The mcp package is intentionally left out here - it's only needed locally
+# for mcp_server.py, and isn't used by the deployed web app.
+requests>=2.31
+flask>=2.3
+gunicorn>=21.2
