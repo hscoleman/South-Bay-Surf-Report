@@ -56,7 +56,7 @@ This only needs `requests` and `flask`, both of which work fine on Python
 1. Push this folder to a GitHub repo (see steps below).
 2. Go to [render.com](https://render.com), sign up with GitHub (no credit card needed).
 3. Click **New +** → **Web Service** → connect your repo. Render will detect `render.yaml` and pre-fill the build/start commands — just click **Create Web Service**.
-4. After ~1-2 minutes you'll get a live URL like `https://southbay-surf.onrender.com` — that's your shareable link, works on any device.
+4. After ~1-2 minutes you'll get a live URL like `https://south-bay-surf-report.onrender.com` — that's your shareable link, works on any device.
 5. From then on, every `git push` to your repo automatically triggers a rebuild and redeploy — no manual redeploy step.
 
 Free tier note: the service spins down after 15 minutes idle and takes about a minute to spin back up on the next visit — fine for demoing, just not instant if it's been sitting unused.
@@ -69,7 +69,7 @@ git commit -m "Initial commit"
 ```
 Then create a new empty repo at github.com/new (don't check "add a README"), and:
 ```bash
-git remote add origin https://github.com/<your-username>/southbay-surf.git
+git remote add origin https://github.com/<your-username>/South-Bay-Surf-Report.git
 git branch -M main
 git push -u origin main
 ```

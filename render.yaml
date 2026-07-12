@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: southbay-surf
+    name: South-Bay-Surf-Report
     env: python
     buildCommand: pip install -r requirements-web.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
