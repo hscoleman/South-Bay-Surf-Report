@@ -8,6 +8,9 @@ every 6 hours; resolution is regional-ocean scale, not down-to-the-sandbar,
 but it's the best free source that will actually take a coordinate.
 """
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import requests
 
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
@@ -15,11 +18,38 @@ MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 # from Open-Meteo's regular weather forecast API instead.
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
+LOCAL_TZ = "America/Los_Angeles"
+
 HOURLY_VARS = [
     "wave_height", "wave_direction", "wave_period",
     "swell_wave_height", "swell_wave_direction", "swell_wave_period",
     "wind_wave_height", "wind_wave_direction", "wind_wave_period",
 ]
+
+
+def _nearest_hour_index(times: list) -> int:
+    """Index of the hourly-array entry closest to right now (local time).
+
+    IMPORTANT: Open-Meteo's hourly arrays always start at 00:00 local time
+    of the current day, not at the current hour - so index 0 is midnight,
+    not "now". Using idx=0 as a stand-in for "current conditions" silently
+    returns midnight's numbers, which can look nothing like what's actually
+    happening outside (e.g. calm early-morning wind vs a real afternoon
+    sea breeze). This finds the entry that's actually closest to now.
+    """
+    if not times:
+        return 0
+    now = datetime.now(ZoneInfo(LOCAL_TZ)).replace(tzinfo=None)
+    best_idx, best_diff = 0, None
+    for i, t in enumerate(times):
+        try:
+            dt = datetime.fromisoformat(t)
+        except ValueError:
+            continue
+        diff = abs((dt - now).total_seconds())
+        if best_diff is None or diff < best_diff:
+            best_diff, best_idx = diff, i
+    return best_idx
 
 
 def fetch_marine_forecast(lat: float, lon: float, forecast_days: int = 3) -> dict:
@@ -45,8 +75,9 @@ def fetch_marine_forecast(lat: float, lon: float, forecast_days: int = 3) -> dic
     if not times:
         raise ValueError("No hourly marine data returned for this coordinate")
 
-    # Open-Meteo returns the series starting at (or very near) the current hour.
-    idx = 0
+    # The hourly array starts at midnight local time, not "now" - find the
+    # entry actually closest to the current hour for the "current" snapshot.
+    idx = _nearest_hour_index(times)
     current = {"time": times[idx]}
     for var in HOURLY_VARS:
         series = hourly.get(var, [])
@@ -198,7 +229,7 @@ def fetch_current_wind(lat: float, lon: float) -> dict:
     if not times:
         raise ValueError("No hourly wind data returned for this coordinate")
 
-    idx = 0
+    idx = _nearest_hour_index(times)
     return {
         "time": times[idx],
         "wind_speed_kt": hourly.get("wind_speed_10m", [None])[idx],
