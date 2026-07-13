@@ -61,6 +61,79 @@ main {
   margin-bottom: 16px;
 }
 
+.best-spot-banner {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.best-spot-card {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.best-spot-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--teal-light);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.best-spot-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.best-spot-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+.best-spot-note {
+  font-size: 11px;
+  color: #b9c6d8;
+  line-height: 1.4;
+}
+
+.rank-list {
+  background: var(--card-bg);
+  border: 1px solid #e7e2d6;
+  border-radius: 14px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f0ece0;
+  font-size: 13px;
+}
+
+.rank-row:last-child { border-bottom: none; }
+
+.rank-num {
+  color: var(--text-muted);
+  font-weight: 700;
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.rank-name { flex: 1; color: var(--text-dark); }
+
+.tide-tag { background: #eef1f6; color: var(--navy); }
+
+@media (max-width: 640px) {
+  .best-spot-banner { grid-template-columns: 1fr; }
+}
+
 .spot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

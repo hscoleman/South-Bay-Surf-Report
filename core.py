@@ -9,6 +9,7 @@ both entry points stay in sync.
 import json
 import os
 import time
+from datetime import datetime
 
 from buoys import fetch_buoy_latest
 from marine import (
@@ -17,8 +18,15 @@ from marine import (
     fetch_wind_forecast,
     fetch_current_wind,
 )
-from tides import fetch_today_tides, fetch_tides_range, fetch_tide_curve
-from quality import classify_wind, classify_swell_period, compute_quality
+from tides import fetch_today_tides, fetch_tides_range, fetch_tide_curve, classify_tide_state
+from quality import (
+    classify_wind,
+    classify_swell_period,
+    compute_quality,
+    swell_direction_score,
+    tide_match_score,
+)
+from spot_guides import get_spot_guide
 
 SPOTS_PATH = os.path.join(os.path.dirname(__file__), "spots.json")
 
@@ -58,6 +66,17 @@ def get_tide_today() -> list:
     return _cached(f"tide:{station}", lambda: fetch_today_tides(station))
 
 
+def get_tide_curve_today() -> list:
+    """Return today's hourly tide curve for the configured reference tide station.
+
+    One station shared across all spots, so this is cached once regardless
+    of how many spots ask for it.
+    """
+    config = _load_config()
+    station = config["tide_station"]["id"]
+    return _cached(f"tide_curve_today:{station}", lambda: fetch_tide_curve(station, days=1))
+
+
 def _find_spot(config: dict, spot_id: str) -> dict:
     spot = next((s for s in config["spots"] if s["id"] == spot_id), None)
     if not spot:
@@ -77,13 +96,29 @@ def get_spot_conditions(spot_id: str) -> dict:
     wind = _cached(f"cur_wind:{spot_id}", lambda: fetch_current_wind(spot["lat"], spot["lon"]))
 
     forecast = marine["current"]
+    guide = get_spot_guide(spot["id"]) or {}
+
     wind_quality = classify_wind(wind.get("wind_direction_deg"), spot.get("shore_facing_deg"))
     swell_type = classify_swell_period(forecast.get("swell_wave_period"))
+
+    tide_curve_today = get_tide_curve_today()
+    tide_state = classify_tide_state(tide_curve_today)
+
+    sd_score = swell_direction_score(forecast.get("swell_wave_direction"), guide.get("optimal_swell_deg"))
+    t_score = tide_match_score(
+        tide_state.get("bucket"),
+        tide_state.get("trend"),
+        guide.get("best_tide_range"),
+        guide.get("best_tide_trend"),
+    )
+
     quality = compute_quality(
         forecast.get("swell_wave_height"),
         forecast.get("swell_wave_period"),
         wind_quality,
         wind.get("wind_speed_kt"),
+        swell_dir_score=sd_score,
+        tide_score=t_score,
     )
 
     return {
@@ -94,6 +129,7 @@ def get_spot_conditions(spot_id: str) -> dict:
         "forecast_units": marine["units"],
         "nearby_buoy": buoy,
         "tide_today": tides,
+        "tide_state": tide_state,
         "wind": wind,
         "wind_quality": wind_quality,
         "swell_type": swell_type,
@@ -146,23 +182,46 @@ def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
         )
 
     shore_facing_deg = spot.get("shore_facing_deg")
+    guide = get_spot_guide(spot["id"]) or {}
 
     for day in daily_marine:
         wind_today = wind_by_date.get(day["date"], {})
+        day_tide_curve = tide_curve_by_date.get(day["date"], [])
         day["tides"] = tides_by_date.get(day["date"], [])
-        day["tide_curve"] = tide_curve_by_date.get(day["date"], [])
+        day["tide_curve"] = day_tide_curve
         day["wind"] = wind_today
         day["sunrise"] = wind_today.get("sunrise")
         day["sunset"] = wind_today.get("sunset")
 
+        # Use that day's noon as the reference point for tide state, same
+        # noon-snapshot convention used for swell/wind on future days.
+        noon_ref = None
+        try:
+            noon_ref = datetime.strptime(f"{day['date']} 12:00", "%Y-%m-%d %H:%M")
+        except ValueError:
+            pass
+        tide_state = classify_tide_state(day_tide_curve, reference_dt=noon_ref)
+        day["tide_state"] = tide_state
+
         wind_quality = classify_wind(wind_today.get("wind_direction_deg"), shore_facing_deg)
         day["wind_quality"] = wind_quality
         day["swell_type"] = classify_swell_period(day.get("swell_period_s"))
+
+        sd_score = swell_direction_score(day.get("swell_direction_deg"), guide.get("optimal_swell_deg"))
+        t_score = tide_match_score(
+            tide_state.get("bucket"),
+            tide_state.get("trend"),
+            guide.get("best_tide_range"),
+            guide.get("best_tide_trend"),
+        )
+
         day["quality"] = compute_quality(
             day.get("swell_height_m"),
             day.get("swell_period_s"),
             wind_quality,
             wind_today.get("wind_speed_kt"),
+            swell_dir_score=sd_score,
+            tide_score=t_score,
         )
 
     return {

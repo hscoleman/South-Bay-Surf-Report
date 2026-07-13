@@ -16,6 +16,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore, NE around 45°",
         "optimal_wind_deg": 45,
         "best_tide": "Mid tide, falling",
+        "best_tide_range": ["mid"],
+        "best_tide_trend": "falling",
         "best_season": "Winter - most consistent in December",
         "blurb": (
             "Toes Beach sits at the very north end of Playa del Rey, right where "
@@ -32,6 +34,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore NE around 45°; tolerates cross-shore",
         "optimal_wind_deg": 45,
         "best_tide": "Low tide",
+        "best_tide_range": ["low"],
+        "best_tide_trend": None,
         "best_season": "Fairly consistent year-round",
         "blurb": (
             "Dockweiler is a long, open A-frame beach break running from Ballona "
@@ -48,6 +52,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore NE around 45°",
         "optimal_wind_deg": 45,
         "best_tide": "Low to negative tide for the best shape",
+        "best_tide_range": ["low"],
+        "best_tide_trend": None,
         "best_season": "Winter - most consistent in December",
         "blurb": (
             "This one breaks left off the jetty next to the El Segundo Energy "
@@ -64,6 +70,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore E-SE, roughly 90-135°",
         "optimal_wind_deg": 110,
         "best_tide": "Mid tide",
+        "best_tide_range": ["mid"],
+        "best_tide_trend": None,
         "best_season": "Fall through spring (Oct-Apr); can hold 5-10ft",
         "blurb": (
             "El Porto is the South Bay's northwest-swell magnet - it's almost "
@@ -81,6 +89,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore E around 90°",
         "optimal_wind_deg": 90,
         "best_tide": "Low to mid tide",
+        "best_tide_range": ["low", "mid"],
+        "best_tide_trend": None,
         "best_season": "Winter most reliable; summer smaller and more playful",
         "blurb": (
             "A classic peaky Southern California beach break with shifting "
@@ -97,6 +107,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore E around 90°",
         "optimal_wind_deg": 90,
         "best_tide": "Mid to high tide, rising",
+        "best_tide_range": ["mid", "high"],
+        "best_tide_trend": "rising",
         "best_season": "Winter (Nov-Feb) for size; summer S swells are gentler for beginners",
         "blurb": (
             "A few blocks north of the pier, 22nd Street shares the same broad "
@@ -111,6 +123,8 @@ SPOT_GUIDES = {
         "optimal_wind": "Offshore E around 90°",
         "optimal_wind_deg": 90,
         "best_tide": "Mid tide, rising",
+        "best_tide_range": ["mid"],
+        "best_tide_trend": "rising",
         "best_season": "Winter (Nov-Feb) most reliable; summer better for beginners",
         "blurb": (
             "Peaky beach break on both sides of the pier, similar to Manhattan "

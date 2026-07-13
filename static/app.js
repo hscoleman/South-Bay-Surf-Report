@@ -4,6 +4,7 @@
 const grid = document.getElementById("spot-grid");
 const statusBanner = document.getElementById("status-banner");
 const todayDateEl = document.getElementById("today-date");
+const bestSpotBanner = document.getElementById("best-spot-banner");
 
 const overlay = document.getElementById("detail-overlay");
 const detailTitle = document.getElementById("detail-title");
@@ -183,6 +184,49 @@ function renderCard(report) {
   return card;
 }
 
+function renderBestSpot(data) {
+  const ranked = data
+    .filter(r => r.quality)
+    .slice()
+    .sort((a, b) => b.quality.score - a.quality.score);
+
+  if (ranked.length === 0) {
+    bestSpotBanner.innerHTML = "";
+    return;
+  }
+
+  const top = ranked[0];
+  const rest = ranked.slice(1);
+  const tideState = top.tide_state || {};
+
+  const reasonBits = [];
+  if (top.swell_type) reasonBits.push(swellTypeBadge(top.swell_type));
+  if (top.wind_quality) reasonBits.push(windBadge(top.wind_quality));
+  if (tideState.bucket) {
+    reasonBits.push(`<span class="tag-badge tide-tag">${tideState.bucket} tide${tideState.trend ? ", " + tideState.trend : ""}</span>`);
+  }
+
+  const restRows = rest
+    .map((r, i) => `
+      <div class="rank-row">
+        <span class="rank-num">#${i + 2}</span>
+        <span class="rank-name">${r.spot}</span>
+        ${qualityBadge(r.quality)}
+      </div>
+    `)
+    .join("");
+
+  bestSpotBanner.innerHTML = `
+    <div class="best-spot-card">
+      <div class="best-spot-label">&#127942; Best spot right now</div>
+      <div class="best-spot-name">${top.spot}</div>
+      <div class="best-spot-reasons">${reasonBits.join(" ")}</div>
+      <div class="best-spot-note">Ranked from current wave height, swell direction match, wind, and tide for each spot's known sweet spot.</div>
+    </div>
+    <div class="rank-list">${restRows}</div>
+  `;
+}
+
 async function loadDashboard() {
   try {
     const res = await fetch("/api/conditions");
@@ -191,6 +235,7 @@ async function loadDashboard() {
 
     grid.innerHTML = "";
     data.forEach(report => grid.appendChild(renderCard(report)));
+    renderBestSpot(data);
   } catch (err) {
     showError(`Couldn't load live conditions (${err.message}). Check your network connection - this app calls NOAA and Open-Meteo directly.`);
   }
