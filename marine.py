@@ -11,6 +11,9 @@ but it's the best free source that will actually take a coordinate.
 import requests
 
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
+# Actual surface wind (speed/direction) isn't part of the marine API - it comes
+# from Open-Meteo's regular weather forecast API instead.
+WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
 HOURLY_VARS = [
     "wave_height", "wave_direction", "wave_period",
@@ -100,6 +103,58 @@ def fetch_daily_summary(lat: float, lon: float, days: int = 5) -> list:
             "swell_period_s": _at_noon("swell_wave_period"),
             "wind_wave_height_m": _at_noon("wind_wave_height"),
         })
+
+    return summary
+
+
+def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
+    """Return a per-date wind summary (speed, direction, gust) for a coordinate.
+
+    Wind isn't part of the marine API - it's a separate weather model, so this
+    hits Open-Meteo's regular forecast endpoint. Returns a dict keyed by date
+    string so it's easy to merge into the marine daily summary.
+    """
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+        "wind_speed_unit": "mph",
+        "timezone": "America/Los_Angeles",
+        "forecast_days": days,
+    }
+    resp = requests.get(WEATHER_URL, params=params, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+
+    hourly = data.get("hourly", {})
+    times = hourly.get("time", [])
+    if not times:
+        raise ValueError("No hourly wind data returned for this coordinate")
+
+    day_indexes = {}
+    for i, t in enumerate(times):
+        date_str = t.split("T")[0]
+        day_indexes.setdefault(date_str, []).append(i)
+
+    summary = {}
+    for date_str, idxs in day_indexes.items():
+        # same noon-snapshot approach as fetch_daily_summary - wind direction
+        # is a bearing, so a same-day average would be meaningless
+        noon_idx = next((i for i in idxs if times[i].endswith("T12:00")), None)
+        if noon_idx is None and idxs:
+            noon_idx = idxs[len(idxs) // 2]
+
+        def _at_noon(var):
+            series = hourly.get(var, [])
+            if noon_idx is None or noon_idx >= len(series):
+                return None
+            return series[noon_idx]
+
+        summary[date_str] = {
+            "wind_speed_mph": _at_noon("wind_speed_10m"),
+            "wind_direction_deg": _at_noon("wind_direction_10m"),
+            "wind_gust_mph": _at_noon("wind_gusts_10m"),
+        }
 
     return summary
 

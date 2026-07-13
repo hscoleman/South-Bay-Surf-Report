@@ -118,7 +118,7 @@ async function loadDashboard() {
 
 async function openDetail(spotId, spotName) {
   detailTitle.textContent = spotName;
-  detailTableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+  detailTableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
   overlay.hidden = false;
 
   try {
@@ -132,17 +132,23 @@ async function openDetail(spotId, spotName) {
         .map(t => `<span class="tide-chip ${t.type === "Low" ? "low" : ""}">${t.type} ${t.height_ft}ft @ ${fmtTideTime(t.time)}</span>`)
         .join("");
 
+      const wind = day.wind || {};
+      const windCell = wind.wind_speed_mph != null
+        ? `${degToCompass(wind.wind_direction_deg)} (${Math.round(wind.wind_direction_deg)}&deg;) &middot; ${Math.round(wind.wind_speed_mph)} mph${wind.wind_gust_mph != null ? ` (g${Math.round(wind.wind_gust_mph)})` : ""}`
+        : "--";
+
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${fmtDateHeading(day.date)}</td>
         <td>${fmtFeet(day.wave_height_min_m, 0)}-${fmtFeet(day.wave_height_max_m, 0)} ft</td>
-        <td>${degToCompass(day.swell_direction_deg)} &middot; ${day.swell_period_s ?? "--"}s &middot; ${fmtFeet(day.swell_height_m)}ft</td>
+        <td>${degToCompass(day.swell_direction_deg)}${day.swell_direction_deg != null ? ` (${Math.round(day.swell_direction_deg)}&deg;)` : ""} &middot; ${day.swell_period_s ?? "--"}s &middot; ${fmtFeet(day.swell_height_m)}ft</td>
+        <td>${windCell}</td>
         <td>${tideChips || "--"}</td>
       `;
       detailTableBody.appendChild(row);
     });
   } catch (err) {
-    detailTableBody.innerHTML = `<tr><td colspan="4">Couldn't load forecast (${err.message})</td></tr>`;
+    detailTableBody.innerHTML = `<tr><td colspan="5">Couldn't load forecast (${err.message})</td></tr>`;
   }
 }
 

@@ -11,7 +11,7 @@ import os
 import time
 
 from buoys import fetch_buoy_latest
-from marine import fetch_marine_forecast, fetch_daily_summary
+from marine import fetch_marine_forecast, fetch_daily_summary, fetch_wind_forecast
 from tides import fetch_today_tides, fetch_tides_range
 
 SPOTS_PATH = os.path.join(os.path.dirname(__file__), "spots.json")
@@ -102,6 +102,11 @@ def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
         lambda: fetch_tides_range(tide_station, days=days),
     )
 
+    wind_by_date = _cached(
+        f"wind:{spot_id}:{days}",
+        lambda: fetch_wind_forecast(spot["lat"], spot["lon"], days=days),
+    )
+
     tides_by_date = {}
     for t in tide_range:
         tides_by_date.setdefault(t["date"], []).append(
@@ -110,6 +115,7 @@ def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
 
     for day in daily_marine:
         day["tides"] = tides_by_date.get(day["date"], [])
+        day["wind"] = wind_by_date.get(day["date"], {})
 
     return {
         "spot": spot["name"],
