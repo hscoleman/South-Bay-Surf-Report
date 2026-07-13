@@ -8,6 +8,10 @@
   --text-dark: #12233c;
   --text-muted: #5b6b82;
   --danger: #c0392b;
+  --great: #1a9e63;
+  --good: #13a89e;
+  --fair: #d98e2c;
+  --poor: #c0392b;
 }
 
 * { box-sizing: border-box; }
@@ -86,6 +90,56 @@ main {
   font-size: 16px;
   color: var(--navy);
 }
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quality-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 10px;
+  color: white;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quality-badge .stars {
+  font-size: 10px;
+  letter-spacing: -1px;
+}
+
+.badge-great { background: var(--great); }
+.badge-good { background: var(--good); }
+.badge-fair { background: var(--fair); }
+.badge-poor { background: var(--poor); }
+
+.tag-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 8px;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+
+.wind-offshore { background: #e3f6ed; color: var(--great); }
+.wind-cross { background: #fdf3e2; color: var(--fair); }
+.wind-onshore { background: #fbeae7; color: var(--poor); }
+
+.swell-ground { background: #e3f6ed; color: var(--great); }
+.swell-mixed { background: #fdf3e2; color: var(--fair); }
+.swell-wind { background: #fbeae7; color: var(--poor); }
 
 .spot-card .order-tag {
   font-size: 11px;
@@ -166,10 +220,49 @@ main {
 .detail-panel {
   background: white;
   border-radius: 14px;
-  max-width: 720px;
+  max-width: 800px;
   width: 100%;
   padding: 28px;
   position: relative;
+}
+
+.week-trend {
+  margin-bottom: 18px;
+}
+
+.week-trend-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.sparkline {
+  width: 100%;
+  height: 32px;
+  display: block;
+}
+
+.sparkline-wave {
+  height: 46px;
+  color: var(--navy);
+}
+
+.sparkline-tide {
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.sun-row {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.tide-chips {
+  margin-top: 2px;
 }
 
 .close-btn {
@@ -187,10 +280,15 @@ main {
 .detail-panel h2 { margin: 0 0 2px; color: var(--navy); }
 .detail-sub { margin: 0 0 18px; color: var(--text-muted); font-size: 13px; }
 
+#detail-table-wrap {
+  overflow-x: auto;
+}
+
 .forecast-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .forecast-table th {

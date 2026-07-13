@@ -9,6 +9,7 @@ const overlay = document.getElementById("detail-overlay");
 const detailTitle = document.getElementById("detail-title");
 const detailTableBody = document.querySelector("#detail-table tbody");
 const closeBtn = document.getElementById("detail-close");
+const weekTrendEl = document.getElementById("week-trend");
 
 function updateTodayDate() {
   todayDateEl.textContent = new Date().toLocaleDateString(undefined, {
@@ -68,6 +69,63 @@ function showError(message) {
   statusBanner.hidden = false;
 }
 
+function fmtSunTime(isoStr) {
+  if (!isoStr) return "--";
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return "--";
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+const QUALITY_CLASS = { Great: "badge-great", Good: "badge-good", Fair: "badge-fair", Poor: "badge-poor" };
+const WIND_CLASS = { Offshore: "wind-offshore", "Cross-shore": "wind-cross", Onshore: "wind-onshore" };
+const SWELL_CLASS = { Groundswell: "swell-ground", "Mixed swell": "swell-mixed", "Wind swell": "swell-wind" };
+
+function qualityBadge(quality) {
+  if (!quality) return "";
+  const cls = QUALITY_CLASS[quality.rating] || "";
+  const stars = "&#9733;".repeat(quality.stars) + "&#9734;".repeat(5 - quality.stars);
+  return `<span class="quality-badge ${cls}">${quality.rating}<span class="stars">${stars}</span></span>`;
+}
+
+function windBadge(windQuality) {
+  if (!windQuality) return "";
+  const cls = WIND_CLASS[windQuality] || "";
+  return `<span class="tag-badge ${cls}">${windQuality}</span>`;
+}
+
+function swellTypeBadge(swellType) {
+  if (!swellType) return "";
+  const cls = SWELL_CLASS[swellType] || "";
+  return `<span class="tag-badge ${cls}">${swellType}</span>`;
+}
+
+// Builds a minimal inline SVG sparkline from an array of numbers (nulls are
+// skipped). No charting library needed - just a normalized polyline.
+function buildSparkline(values, cssClass, w = 100, h = 32, padding = 4) {
+  const points = values
+    .map((v, i) => ({ v, i }))
+    .filter(p => p.v !== null && p.v !== undefined && !isNaN(p.v));
+  if (points.length < 2) return "";
+
+  const vals = points.map(p => p.v);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = (max - min) || 1;
+  const stepX = (w - padding * 2) / (values.length - 1 || 1);
+
+  const coords = points
+    .map(p => {
+      const x = padding + p.i * stepX;
+      const y = padding + (h - padding * 2) * (1 - (p.v - min) / range);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return `<svg viewBox="0 0 ${w} ${h}" class="sparkline ${cssClass}" preserveAspectRatio="none">
+    <polyline points="${coords}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+  </svg>`;
+}
+
 function renderCard(report) {
   const card = document.createElement("div");
   card.className = "spot-card";
@@ -75,6 +133,7 @@ function renderCard(report) {
 
   const forecast = report.forecast || {};
   const buoy = report.nearby_buoy || {};
+  const wind = report.wind || {};
   const upcoming = nextTide(report.tide_today);
 
   const waveHeightM = forecast.wave_height ?? buoy.wave_height_m ?? null;
@@ -82,7 +141,10 @@ function renderCard(report) {
   const swellPeriod = forecast.swell_wave_period ?? buoy.dominant_wave_period_s ?? null;
 
   card.innerHTML = `
-    <h3>${report.spot}</h3>
+    <div class="card-head">
+      <h3>${report.spot}</h3>
+      ${qualityBadge(report.quality)}
+    </div>
     <div class="wave-row">
       <div class="compass">
         <div class="compass-arrow" style="transform: translateX(-50%) rotate(${swellDir ?? 0}deg);"></div>
@@ -93,7 +155,10 @@ function renderCard(report) {
       </div>
     </div>
     <div class="card-meta">
+      <span>${windBadge(report.wind_quality)} ${wind.wind_speed_kt != null ? Math.round(wind.wind_speed_kt) + " kt" : ""}</span>
       <span>Water: <strong>${buoy.water_temp_c != null ? (buoy.water_temp_c * 9/5 + 32).toFixed(0) + "&deg;F" : "--"}</strong></span>
+    </div>
+    <div class="card-meta">
       <span>Next tide: <strong>${upcoming ? `${upcoming.type} ${upcoming.height_ft}ft @ ${fmtTideTime(upcoming.time)}` : "--"}</strong></span>
     </div>
     <div class="view-forecast">View 5-day forecast &rarr;</div>
@@ -118,7 +183,8 @@ async function loadDashboard() {
 
 async function openDetail(spotId, spotName) {
   detailTitle.textContent = spotName;
-  detailTableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+  detailTableBody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  weekTrendEl.innerHTML = "";
   overlay.hidden = false;
 
   try {
@@ -126,29 +192,47 @@ async function openDetail(spotId, spotName) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to load forecast");
 
+    // Week-at-a-glance wave height trend, above the table.
+    const trendValues = data.days.map(d => metersToFeet(d.wave_height_max_m));
+    const trendSpark = buildSparkline(trendValues, "sparkline-wave", 280, 46);
+    weekTrendEl.innerHTML = trendSpark
+      ? `<div class="week-trend-label">Wave height trend (this week)</div>${trendSpark}`
+      : "";
+
     detailTableBody.innerHTML = "";
     data.days.forEach(day => {
       const tideChips = (day.tides || [])
         .map(t => `<span class="tide-chip ${t.type === "Low" ? "low" : ""}">${t.type} ${t.height_ft}ft @ ${fmtTideTime(t.time)}</span>`)
         .join("");
+      const tideSpark = buildSparkline((day.tide_curve || []).map(p => p.height_ft), "sparkline-tide", 100, 28);
 
       const wind = day.wind || {};
       const windCell = wind.wind_speed_kt != null
-        ? `${degToCompass(wind.wind_direction_deg)} (${Math.round(wind.wind_direction_deg)}&deg;) &middot; ${Math.round(wind.wind_speed_kt)} kt${wind.wind_gust_kt != null ? ` (g${Math.round(wind.wind_gust_kt)})` : ""}`
+        ? `${windBadge(day.wind_quality)}<br>${degToCompass(wind.wind_direction_deg)} (${Math.round(wind.wind_direction_deg)}&deg;) &middot; ${Math.round(wind.wind_speed_kt)} kt${wind.wind_gust_kt != null ? ` (g${Math.round(wind.wind_gust_kt)})` : ""}`
         : "--";
 
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${fmtDateHeading(day.date)}</td>
+        <td>
+          ${fmtDateHeading(day.date)}
+          <div class="sun-row">&#127749; ${fmtSunTime(day.sunrise)} &middot; &#127751; ${fmtSunTime(day.sunset)}</div>
+        </td>
+        <td>${qualityBadge(day.quality)}</td>
         <td>${fmtFeet(day.wave_height_min_m, 0)}-${fmtFeet(day.wave_height_max_m, 0)} ft</td>
-        <td>${degToCompass(day.swell_direction_deg)}${day.swell_direction_deg != null ? ` (${Math.round(day.swell_direction_deg)}&deg;)` : ""} &middot; ${day.swell_period_s ?? "--"}s &middot; ${fmtFeet(day.swell_height_m)}ft</td>
+        <td>
+          ${swellTypeBadge(day.swell_type)}<br>
+          ${degToCompass(day.swell_direction_deg)}${day.swell_direction_deg != null ? ` (${Math.round(day.swell_direction_deg)}&deg;)` : ""} &middot; ${day.swell_period_s ?? "--"}s &middot; ${fmtFeet(day.swell_height_m)}ft
+        </td>
         <td>${windCell}</td>
-        <td>${tideChips || "--"}</td>
+        <td>
+          ${tideSpark}
+          <div class="tide-chips">${tideChips || "--"}</div>
+        </td>
       `;
       detailTableBody.appendChild(row);
     });
   } catch (err) {
-    detailTableBody.innerHTML = `<tr><td colspan="5">Couldn't load forecast (${err.message})</td></tr>`;
+    detailTableBody.innerHTML = `<tr><td colspan="6">Couldn't load forecast (${err.message})</td></tr>`;
   }
 }
 

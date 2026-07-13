@@ -118,6 +118,7 @@ def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
         "latitude": lat,
         "longitude": lon,
         "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+        "daily": "sunrise,sunset",
         "wind_speed_unit": "kn",
         "timezone": "America/Los_Angeles",
         "forecast_days": days,
@@ -130,6 +131,18 @@ def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
     times = hourly.get("time", [])
     if not times:
         raise ValueError("No hourly wind data returned for this coordinate")
+
+    daily = data.get("daily", {})
+    daily_times = daily.get("time", [])
+    sunrise_series = daily.get("sunrise", [])
+    sunset_series = daily.get("sunset", [])
+    sun_by_date = {
+        d: {
+            "sunrise": sunrise_series[i] if i < len(sunrise_series) else None,
+            "sunset": sunset_series[i] if i < len(sunset_series) else None,
+        }
+        for i, d in enumerate(daily_times)
+    }
 
     day_indexes = {}
     for i, t in enumerate(times):
@@ -150,13 +163,48 @@ def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
                 return None
             return series[noon_idx]
 
+        sun = sun_by_date.get(date_str, {})
         summary[date_str] = {
             "wind_speed_kt": _at_noon("wind_speed_10m"),
             "wind_direction_deg": _at_noon("wind_direction_10m"),
             "wind_gust_kt": _at_noon("wind_gusts_10m"),
+            "sunrise": sun.get("sunrise"),
+            "sunset": sun.get("sunset"),
         }
 
     return summary
+
+
+def fetch_current_wind(lat: float, lon: float) -> dict:
+    """Return right-now wind speed/direction/gust for a coordinate.
+
+    Mirrors fetch_marine_forecast's "current" snapshot pattern - used for
+    the quick spot-card view rather than the 5-day table.
+    """
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+        "wind_speed_unit": "kn",
+        "timezone": "America/Los_Angeles",
+        "forecast_days": 1,
+    }
+    resp = requests.get(WEATHER_URL, params=params, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+
+    hourly = data.get("hourly", {})
+    times = hourly.get("time", [])
+    if not times:
+        raise ValueError("No hourly wind data returned for this coordinate")
+
+    idx = 0
+    return {
+        "time": times[idx],
+        "wind_speed_kt": hourly.get("wind_speed_10m", [None])[idx],
+        "wind_direction_deg": hourly.get("wind_direction_10m", [None])[idx],
+        "wind_gust_kt": hourly.get("wind_gusts_10m", [None])[idx],
+    }
 
 
 if __name__ == "__main__":
