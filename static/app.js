@@ -133,8 +133,8 @@ async function openDetail(spotId, spotName) {
         .join("");
 
       const wind = day.wind || {};
-      const windCell = wind.wind_speed_mph != null
-        ? `${degToCompass(wind.wind_direction_deg)} (${Math.round(wind.wind_direction_deg)}&deg;) &middot; ${Math.round(wind.wind_speed_mph)} mph${wind.wind_gust_mph != null ? ` (g${Math.round(wind.wind_gust_mph)})` : ""}`
+      const windCell = wind.wind_speed_kt != null
+        ? `${degToCompass(wind.wind_direction_deg)} (${Math.round(wind.wind_direction_deg)}&deg;) &middot; ${Math.round(wind.wind_speed_kt)} kt${wind.wind_gust_kt != null ? ` (g${Math.round(wind.wind_gust_kt)})` : ""}`
         : "--";
 
       const row = document.createElement("tr");

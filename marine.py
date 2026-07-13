@@ -118,7 +118,7 @@ def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
         "latitude": lat,
         "longitude": lon,
         "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
-        "wind_speed_unit": "mph",
+        "wind_speed_unit": "kn",
         "timezone": "America/Los_Angeles",
         "forecast_days": days,
     }
@@ -151,9 +151,9 @@ def fetch_wind_forecast(lat: float, lon: float, days: int = 5) -> dict:
             return series[noon_idx]
 
         summary[date_str] = {
-            "wind_speed_mph": _at_noon("wind_speed_10m"),
+            "wind_speed_kt": _at_noon("wind_speed_10m"),
             "wind_direction_deg": _at_noon("wind_direction_10m"),
-            "wind_gust_mph": _at_noon("wind_gusts_10m"),
+            "wind_gust_kt": _at_noon("wind_gusts_10m"),
         }
 
     return summary
