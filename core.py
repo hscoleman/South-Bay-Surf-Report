@@ -25,6 +25,7 @@ from quality import (
     compute_quality,
     swell_direction_score,
     tide_match_score,
+    SKILL_LEVELS,
 )
 from spot_guides import get_spot_guide
 
@@ -85,8 +86,15 @@ def _find_spot(config: dict, spot_id: str) -> dict:
     return spot
 
 
-def get_spot_conditions(spot_id: str) -> dict:
-    """Return a merged conditions report (forecast + buoy + wind + tides + quality) for one spot."""
+def get_spot_conditions(spot_id: str, skill_level: str = "intermediate") -> dict:
+    """Return a merged conditions report (forecast + buoy + wind + tides + quality) for one spot.
+
+    skill_level ("beginner"/"intermediate"/"advanced") shifts what counts as
+    a "good" quality score - see quality.compute_quality for the reasoning.
+    """
+    if skill_level not in SKILL_LEVELS:
+        skill_level = "intermediate"
+
     config = _load_config()
     spot = _find_spot(config, spot_id)
 
@@ -119,6 +127,7 @@ def get_spot_conditions(spot_id: str) -> dict:
         wind.get("wind_speed_kt"),
         swell_dir_score=sd_score,
         tide_score=t_score,
+        skill_level=skill_level,
     )
 
     return {
@@ -134,17 +143,21 @@ def get_spot_conditions(spot_id: str) -> dict:
         "wind_quality": wind_quality,
         "swell_type": swell_type,
         "quality": quality,
+        "skill_level": skill_level,
     }
 
 
-def get_all_conditions() -> list:
+def get_all_conditions(skill_level: str = "intermediate") -> list:
     """Return conditions reports for every configured spot, Playa del Rey through Hermosa Beach."""
     config = _load_config()
-    return [get_spot_conditions(s["id"]) for s in config["spots"]]
+    return [get_spot_conditions(s["id"], skill_level=skill_level) for s in config["spots"]]
 
 
-def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
+def get_forecast_by_date(spot_id: str, days: int = 5, skill_level: str = "intermediate") -> dict:
     """Return a date-by-date forecast (wave/swell + tide events per day) for one spot."""
+    if skill_level not in SKILL_LEVELS:
+        skill_level = "intermediate"
+
     config = _load_config()
     spot = _find_spot(config, spot_id)
 
@@ -222,6 +235,7 @@ def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
             wind_today.get("wind_speed_kt"),
             swell_dir_score=sd_score,
             tide_score=t_score,
+            skill_level=skill_level,
         )
 
     return {
@@ -229,4 +243,5 @@ def get_forecast_by_date(spot_id: str, days: int = 5) -> dict:
         "spot_id": spot["id"],
         "coordinates": {"lat": spot["lat"], "lon": spot["lon"]},
         "days": daily_marine,
+        "skill_level": skill_level,
     }

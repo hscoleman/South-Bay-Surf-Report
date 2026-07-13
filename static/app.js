@@ -17,6 +17,30 @@ const guideTitle = document.getElementById("guide-title");
 const guideContent = document.getElementById("guide-content");
 const guideCloseBtn = document.getElementById("guide-close");
 
+const skillButtons = document.querySelectorAll(".skill-btn");
+const VALID_SKILLS = ["beginner", "intermediate", "advanced"];
+let currentSkill = localStorage.getItem("southbaySurfSkill");
+if (!VALID_SKILLS.includes(currentSkill)) currentSkill = "intermediate";
+
+function applySkillButtonStyles() {
+  skillButtons.forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.skill === currentSkill);
+  });
+}
+
+function setSkill(skill) {
+  if (!VALID_SKILLS.includes(skill) || skill === currentSkill) return;
+  currentSkill = skill;
+  localStorage.setItem("southbaySurfSkill", currentSkill);
+  applySkillButtonStyles();
+  loadDashboard();
+}
+
+skillButtons.forEach(btn => {
+  btn.addEventListener("click", () => setSkill(btn.dataset.skill));
+});
+applySkillButtonStyles();
+
 function updateTodayDate() {
   todayDateEl.textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
@@ -229,7 +253,7 @@ function renderBestSpot(data) {
 
 async function loadDashboard() {
   try {
-    const res = await fetch("/api/conditions");
+    const res = await fetch(`/api/conditions?skill=${currentSkill}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to load conditions");
 
@@ -248,7 +272,7 @@ async function openDetail(spotId, spotName) {
   overlay.hidden = false;
 
   try {
-    const res = await fetch(`/api/forecast/${spotId}?days=5`);
+    const res = await fetch(`/api/forecast/${spotId}?days=5&skill=${currentSkill}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to load forecast");
 

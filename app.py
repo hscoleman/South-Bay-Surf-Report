@@ -16,8 +16,16 @@ from flask import Flask, jsonify, render_template, request
 
 import core
 from spot_guides import get_spot_guide
+from quality import SKILL_LEVELS
 
 app = Flask(__name__)
+
+
+def _skill_param():
+    """Read ?skill= from the query string, falling back to intermediate
+    for anything missing or not one of the recognized levels."""
+    skill = request.args.get("skill", default="intermediate")
+    return skill if skill in SKILL_LEVELS else "intermediate"
 
 
 @app.route("/")
@@ -34,7 +42,7 @@ def api_spots():
 def api_conditions():
     """Current snapshot (wave/swell/tide) for all 7 spots - powers the main grid."""
     try:
-        return jsonify(core.get_all_conditions())
+        return jsonify(core.get_all_conditions(skill_level=_skill_param()))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -42,7 +50,7 @@ def api_conditions():
 @app.route("/api/conditions/<spot_id>")
 def api_spot_conditions(spot_id):
     try:
-        return jsonify(core.get_spot_conditions(spot_id))
+        return jsonify(core.get_spot_conditions(spot_id, skill_level=_skill_param()))
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
     except Exception as e:
@@ -54,7 +62,7 @@ def api_forecast(spot_id):
     """Date-by-date forecast (wave height range, swell, tide events) - powers the detail view."""
     days = request.args.get("days", default=5, type=int)
     try:
-        return jsonify(core.get_forecast_by_date(spot_id, days=days))
+        return jsonify(core.get_forecast_by_date(spot_id, days=days, skill_level=_skill_param()))
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
     except Exception as e:
