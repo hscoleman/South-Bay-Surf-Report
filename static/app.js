@@ -41,6 +41,39 @@ skillButtons.forEach(btn => {
 });
 applySkillButtonStyles();
 
+// Light/dark toggle. The actual data-theme attribute is set as early as
+// possible by an inline script in index.html's <head> (before this file
+// even loads) to avoid a flash of the wrong palette - this just wires up
+// the switch and keeps localStorage in sync with it.
+const themeToggle = document.getElementById("theme-toggle");
+const themeToggleIcon = document.getElementById("theme-toggle-icon");
+const VALID_THEMES = ["light", "dark"];
+
+function getCurrentTheme() {
+  const t = document.documentElement.getAttribute("data-theme");
+  return VALID_THEMES.includes(t) ? t : "light";
+}
+
+function applyThemeButton() {
+  const theme = getCurrentTheme();
+  if (!themeToggle) return;
+  themeToggle.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+  themeToggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  if (themeToggleIcon) themeToggleIcon.textContent = theme === "dark" ? "\u{1F319}" : "\u{2600}\u{FE0F}";
+}
+
+function setTheme(theme) {
+  if (!VALID_THEMES.includes(theme)) return;
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("southbaySurfTheme", theme);
+  applyThemeButton();
+}
+
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => setTheme(getCurrentTheme() === "dark" ? "light" : "dark"));
+}
+applyThemeButton();
+
 function updateTodayDate() {
   todayDateEl.textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long", month: "long", day: "numeric", year: "numeric",

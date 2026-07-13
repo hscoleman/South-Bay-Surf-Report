@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>South Bay Surf Report</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+  // Set the theme before the page paints, so there's no flash of the wrong
+  // palette while app.js (loaded at the end of body) finishes parsing.
+  (function () {
+    try {
+      var saved = localStorage.getItem("southbaySurfTheme");
+      var theme = (saved === "dark" || saved === "light")
+        ? saved
+        : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
 </head>
 <body>
 
@@ -17,7 +32,12 @@
         <p class="subtitle">Playa del Rey &rarr; Hermosa Beach</p>
       </div>
     </div>
-    <div id="today-date" class="today-date"></div>
+    <div class="topbar-right">
+      <div id="today-date" class="today-date"></div>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
+        <span class="theme-toggle-thumb"><span id="theme-toggle-icon">&#9728;&#65039;</span></span>
+      </button>
+    </div>
   </div>
 </header>
 
