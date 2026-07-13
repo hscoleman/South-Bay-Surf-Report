@@ -11,6 +11,11 @@ const detailTableBody = document.querySelector("#detail-table tbody");
 const closeBtn = document.getElementById("detail-close");
 const weekTrendEl = document.getElementById("week-trend");
 
+const guideOverlay = document.getElementById("guide-overlay");
+const guideTitle = document.getElementById("guide-title");
+const guideContent = document.getElementById("guide-content");
+const guideCloseBtn = document.getElementById("guide-close");
+
 function updateTodayDate() {
   todayDateEl.textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
@@ -162,9 +167,19 @@ function renderCard(report) {
       <span>Next tide: <strong>${upcoming ? `${upcoming.type} ${upcoming.height_ft}ft @ ${fmtTideTime(upcoming.time)}` : "--"}</strong></span>
     </div>
     <div class="view-forecast">View 5-day forecast &rarr;</div>
+    <div class="view-forecast view-guide">What makes ${report.spot} shine &rarr;</div>
   `;
 
   card.addEventListener("click", () => openDetail(report.spot_id, report.spot));
+
+  // The guide line opens a different overlay - stop the click from also
+  // bubbling up to the card's own listener (which would pop open both).
+  const guideLink = card.querySelector(".view-guide");
+  guideLink.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openGuide(report.spot_id, report.spot);
+  });
+
   return card;
 }
 
@@ -236,7 +251,47 @@ async function openDetail(spotId, spotName) {
   }
 }
 
+async function openGuide(spotId, spotName) {
+  guideTitle.textContent = `What makes ${spotName} shine`;
+  guideContent.innerHTML = `<p class="guide-loading">Loading...</p>`;
+  guideOverlay.hidden = false;
+
+  try {
+    const res = await fetch(`/api/guide/${spotId}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "No guide available for this spot yet");
+
+    guideContent.innerHTML = `
+      <div class="guide-facts">
+        <div class="guide-fact">
+          <div class="guide-fact-label">Optimal swell</div>
+          <div class="guide-fact-value">${data.optimal_swell}</div>
+        </div>
+        <div class="guide-fact">
+          <div class="guide-fact-label">Optimal wind</div>
+          <div class="guide-fact-value">${data.optimal_wind}</div>
+        </div>
+        <div class="guide-fact">
+          <div class="guide-fact-label">Best tide</div>
+          <div class="guide-fact-value">${data.best_tide}</div>
+        </div>
+        <div class="guide-fact">
+          <div class="guide-fact-label">Best season</div>
+          <div class="guide-fact-value">${data.best_season}</div>
+        </div>
+      </div>
+      <p class="guide-blurb">${data.blurb}</p>
+      <p class="guide-caveat">This is general spot knowledge compiled from public surf guides, not live data - sandbars shift, so always cross-check it against the live forecast above.</p>
+    `;
+  } catch (err) {
+    guideContent.innerHTML = `<p class="guide-loading">Couldn't load this spot's guide (${err.message}).</p>`;
+  }
+}
+
 closeBtn.addEventListener("click", () => { overlay.hidden = true; });
 overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.hidden = true; });
+
+guideCloseBtn.addEventListener("click", () => { guideOverlay.hidden = true; });
+guideOverlay.addEventListener("click", (e) => { if (e.target === guideOverlay) guideOverlay.hidden = true; });
 
 loadDashboard();

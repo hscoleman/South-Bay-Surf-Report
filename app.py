@@ -15,6 +15,7 @@ package used for mcp_server.py).
 from flask import Flask, jsonify, render_template, request
 
 import core
+from spot_guides import get_spot_guide
 
 app = Flask(__name__)
 
@@ -58,6 +59,21 @@ def api_forecast(spot_id):
         return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/guide/<spot_id>")
+def api_guide(spot_id):
+    """Static 'what makes this spot work' reference guide - not live data,
+    see spot_guides.py for sourcing notes."""
+    spot = next((s for s in core.list_spots() if s["id"] == spot_id), None)
+    if not spot:
+        return jsonify({"error": f"Unknown spot id '{spot_id}'"}), 404
+
+    guide = get_spot_guide(spot_id)
+    if not guide:
+        return jsonify({"error": f"No guide written yet for '{spot_id}'"}), 404
+
+    return jsonify({"spot": spot["name"], "spot_id": spot_id, **guide})
 
 
 if __name__ == "__main__":
